@@ -490,9 +490,6 @@
         <div class="authform">
           <div id="loginForm">
             <h2 style="font-size:19px; margin-bottom:16px;" data-i18n="login_title"></h2>
-            <div style="background:var(--gold-100); border:1px solid var(--gold-400); border-radius:8px; padding:10px 12px; margin-bottom:14px; font-size:12px; color:var(--navy-900);">
-              <strong>Demo account</strong><br>Username: <strong>iemy_user</strong> &nbsp; Password: <strong>Iemy@1234</strong>
-            </div>
             <div class="formerr" id="loginErr"></div>
             <div class="field"><label data-i18n="login_username"></label><input id="li-username" type="text" autocomplete="username"></div>
             <div class="field"><label data-i18n="login_password"></label><input id="li-password" type="password" autocomplete="current-password"></div>
@@ -757,8 +754,7 @@ en:{dir:"ltr",name:"English"}, ar:{dir:"rtl",name:"العربية"}, ur:{dir:"rt
     var now = Date.now(), day=86400000;
     setUsers([
       {username:"sara_k", password:"demo1234", name:"Sara Al-Khalidi", phone:"0551112222", joinedAt: now-90*day},
-      {username:"omar_j", password:"demo1234", name:"Omar Al-Jubran", phone:"0553334444", joinedAt: now-60*day},
-      {username:"iemy_user", password:"Iemy@1234", name:"IEMY User", phone:"0500000000", joinedAt: now}
+      {username:"omar_j", password:"demo1234", name:"Omar Al-Jubran", phone:"0553334444", joinedAt: now-60*day}
     ]);
     setProducts([
       {id:"p1", title:"Sony WH-1000XM4 Headphones", category:"electronics", city:"riyadh", price:520, condition:"likenew", description:"Barely used, comes with case and cable.", seller:"sara_k", createdAt: now-2*day, plan:"free", expiresAt: now-2*day+FREE_DAYS*day, status:"active", image:null},
@@ -771,17 +767,6 @@ en:{dir:"ltr",name:"English"}, ar:{dir:"rtl",name:"العربية"}, ur:{dir:"rt
     safeSet(LS_SEED, true);
   }
   seedIfNeeded();
-
-  // Ensure the demo login account exists even for visitors who already have
-  // an older version of the demo data saved in localStorage.
-  (function ensureDemoUser(){
-    var users = getUsers();
-    var exists = users.some(function(u){ return u.username.toLowerCase() === "iemy_user"; });
-    if(!exists){
-      users.push({username:"iemy_user", password:"Iemy@1234", name:"IEMY User", phone:"0500000000", joinedAt:Date.now()});
-      setUsers(users);
-    }
-  })();
 
   function sweepExpiry(){
     var products = getProducts(); var changed=false; var now=Date.now();
