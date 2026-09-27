@@ -231,8 +231,9 @@
   :root[data-theme="dark"] .switcher button{color:var(--gold-400);}
 
   /* sell / post-ad */
-  .plan-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:22px;}
-  @media(max-width:600px){ .plan-grid{grid-template-columns:1fr;} }
+  .plan-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:22px;}
+  @media(max-width:480px){ .plan-grid{grid-template-columns:1fr 1fr;} }
+  .plancard .ptag{display:inline-block; font-size:10.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--gold-500); background:var(--gold-100); border-radius:5px; padding:2px 7px; margin-top:6px;}
   .plancard{border:2px solid var(--border); border-radius:10px; padding:18px; cursor:pointer; background:var(--card); transition:border-color .15s;}
   .plancard.selected{border-color:var(--navy-800);}
   .plancard.premium.selected{border-color:var(--gold-500);}
@@ -399,20 +400,7 @@
         <p data-i18n="post_sub"></p>
       </div>
 
-      <div class="plan-grid" id="planGrid">
-        <div class="plancard" id="planFreeCard">
-          <span class="pcheck"></span>
-          <div class="pname" data-i18n="plan_free_name"></div>
-          <div class="pprice" id="freePriceLabel">SAR 0</div>
-          <div class="pdesc" data-i18n="plan_free_desc"></div>
-        </div>
-        <div class="plancard premium" id="planPremiumCard">
-          <span class="pcheck"></span>
-          <div class="pname" data-i18n="plan_premium_name"></div>
-          <div class="pprice" id="premiumPriceLabel">SAR 29</div>
-          <div class="pdesc" data-i18n="plan_premium_desc"></div>
-        </div>
-      </div>
+      <div class="plan-grid" id="planGrid"></div>
 
       <div class="sellgrid">
         <form class="panel" id="sellForm">
@@ -420,6 +408,10 @@
           <div class="field">
             <label data-i18n="form_title"></label>
             <input id="s-title" type="text" maxlength="70" required>
+          </div>
+          <div class="field">
+            <label data-i18n="form_phone"></label>
+            <input id="s-phone" type="tel" placeholder="05xxxxxxxx" required>
           </div>
           <div class="field-row">
             <div class="field">
@@ -490,9 +482,6 @@
         <div class="authform">
           <div id="loginForm">
             <h2 style="font-size:19px; margin-bottom:16px;" data-i18n="login_title"></h2>
-            <div style="background:var(--gold-100); border:1px solid var(--gold-400); border-radius:8px; padding:10px 12px; margin-bottom:14px; font-size:12px; color:var(--navy-900);">
-              <strong>Demo account</strong><br>Username: <strong>iemy_user</strong> &nbsp; Password: <strong>Iemy@1234</strong>
-            </div>
             <div class="formerr" id="loginErr"></div>
             <div class="field"><label data-i18n="login_username"></label><input id="li-username" type="text" autocomplete="username"></div>
             <div class="field"><label data-i18n="login_password"></label><input id="li-password" type="password" autocomplete="current-password"></div>
@@ -543,7 +532,16 @@
 (function(){
   "use strict";
 
-  var FREE_DAYS = 3, PREMIUM_DAYS = 30, PREMIUM_PRICE = 29;
+  var FREE_DAYS = 1; // free ads stay live for 24 hours
+  var PREMIUM_PLANS = [
+    {id:"premium7",  days:7,  price:15},
+    {id:"premium30", days:30, price:29},
+    {id:"premium90", days:90, price:69}
+  ];
+  function getPremiumPlan(id){ return PREMIUM_PLANS.find(function(pl){return pl.id===id;}); }
+  function isPremium(p){ return !!p.plan && p.plan!=="free"; }
+  function planDays(planId){ var pl=getPremiumPlan(planId); return pl ? pl.days : FREE_DAYS; }
+  function planPrice(planId){ var pl=getPremiumPlan(planId); return pl ? pl.price : 0; }
 
   var CATEGORIES = ["electronics","vehicles","realestate","furniture","fashion","jobs","services","animals","other"];
   var CAT_EMOJI = {electronics:"🖥️",vehicles:"🚗",realestate:"🏠",furniture:"🛋️",fashion:"👕",jobs:"💼",services:"🛠️",animals:"🐪",other:"📦"};
@@ -568,8 +566,9 @@ en:{dir:"ltr",name:"English"}, ar:{dir:"rtl",name:"العربية"}, ur:{dir:"rt
       post_title:"Post your ad", post_sub:"Choose a plan, then fill in the details.",
       form_title:"Title", form_category:"Category", form_condition:"Condition", form_price:"Price (SAR)", form_city:"City",
       form_desc:"Description", form_photo:"Tap to add a photo", form_photo_hint:"Stored on this device only, for this demo.", form_publish:"Publish ad",
-      plan_free_name:"Free", plan_free_desc:"Your ad stays live for 3 days in the normal list.",
-      plan_premium_name:"Premium", plan_premium_desc:"Your ad appears at the top of results for 30 days with a gold border.",
+      form_phone:"Contact phone number",
+      plan_free_name:"Free", plan_free_desc:"Your ad stays live for 24 hours in the normal list.",
+      plan_premium_name:"Premium", plan_premium_desc_tpl:"Top of results for {days} days with a gold border.", days_label:"days",
       pay_title:"Confirm payment (demo)", pay_desc:"This is a simulation only — no real charge will be made.",
       pay_confirm:"Confirm demo payment", pay_cancel:"Cancel",
       mylistings_title:"My listings", mylistings_sub:"Track and manage what you're selling.",
@@ -608,8 +607,9 @@ en:{dir:"ltr",name:"English"}, ar:{dir:"rtl",name:"العربية"}, ur:{dir:"rt
       post_title:"أضف إعلانك", post_sub:"اختر الباقة ثم أدخل التفاصيل.",
       form_title:"العنوان", form_category:"التصنيف", form_condition:"الحالة", form_price:"السعر (ريال)", form_city:"المدينة",
       form_desc:"الوصف", form_photo:"اضغط لإضافة صورة", form_photo_hint:"تُحفظ الصورة على جهازك فقط في هذا العرض التجريبي.", form_publish:"نشر الإعلان",
-      plan_free_name:"مجاني", plan_free_desc:"يظهر إعلانك لمدة 3 أيام ضمن القائمة العادية.",
-      plan_premium_name:"مميز", plan_premium_desc:"يظهر إعلانك في أعلى النتائج لمدة 30 يومًا بإطار ذهبي.",
+      form_phone:"رقم الجوال للتواصل",
+      plan_free_name:"مجاني", plan_free_desc:"يظهر إعلانك لمدة 24 ساعة ضمن القائمة العادية.",
+      plan_premium_name:"مميز", plan_premium_desc_tpl:"يظهر إعلانك في أعلى النتائج لمدة {days} يومًا بإطار ذهبي.", days_label:"يوم",
       pay_title:"تأكيد الدفع (تجريبي)", pay_desc:"هذا نموذج تجريبي فقط، لن يُخصم أي مبلغ حقيقي.",
       pay_confirm:"تأكيد الدفع التجريبي", pay_cancel:"إلغاء",
       mylistings_title:"إعلاناتي", mylistings_sub:"تابع وأدر إعلاناتك.",
@@ -648,8 +648,9 @@ en:{dir:"ltr",name:"English"}, ar:{dir:"rtl",name:"العربية"}, ur:{dir:"rt
       post_title:"اپنا اشتہار پوسٹ کریں", post_sub:"پہلے پلان منتخب کریں، پھر تفصیلات درج کریں۔",
       form_title:"عنوان", form_category:"زمرہ", form_condition:"حالت", form_price:"قیمت (ریال)", form_city:"شہر",
       form_desc:"تفصیل", form_photo:"تصویر شامل کرنے کے لیے دبائیں", form_photo_hint:"یہ ڈیمو صرف اسی ڈیوائس پر تصویر محفوظ کرتا ہے۔", form_publish:"اشتہار شائع کریں",
-      plan_free_name:"مفت", plan_free_desc:"آپ کا اشتہار 3 دن تک عام فہرست میں نظر آئے گا۔",
-      plan_premium_name:"پریمیم", plan_premium_desc:"آپ کا اشتہار 30 دن تک سنہری بارڈر کے ساتھ سب سے اوپر نظر آئے گا۔",
+      form_phone:"رابطہ فون نمبر",
+      plan_free_name:"مفت", plan_free_desc:"آپ کا اشتہار 24 گھنٹے تک عام فہرست میں نظر آئے گا۔",
+      plan_premium_name:"پریمیم", plan_premium_desc_tpl:"آپ کا اشتہار {days} دن تک سنہری بارڈر کے ساتھ سب سے اوپر نظر آئے گا۔", days_label:"دن",
       pay_title:"ادائیگی کی تصدیق (ڈیمو)", pay_desc:"یہ صرف ڈیمو ہے، کوئی اصل رقم نہیں کاٹی جائے گی۔",
       pay_confirm:"ڈیمو ادائیگی کی تصدیق کریں", pay_cancel:"منسوخ کریں",
       mylistings_title:"میری اشتہارات", mylistings_sub:"اپنے اشتہارات کا نظم کریں۔",
@@ -688,8 +689,9 @@ en:{dir:"ltr",name:"English"}, ar:{dir:"rtl",name:"العربية"}, ur:{dir:"rt
       post_title:"Publier votre annonce", post_sub:"Choisissez une formule puis ajoutez les détails.",
       form_title:"Titre", form_category:"Catégorie", form_condition:"État", form_price:"Prix (SAR)", form_city:"Ville",
       form_desc:"Description", form_photo:"Ajouter une photo", form_photo_hint:"La photo est enregistrée uniquement sur cet appareil pour cette démo.", form_publish:"Publier l'annonce",
-      plan_free_name:"Gratuit", plan_free_desc:"Votre annonce reste visible 3 jours dans la liste normale.",
-      plan_premium_name:"Premium", plan_premium_desc:"Votre annonce apparaît en tête des résultats pendant 30 jours avec un cadre doré.",
+      form_phone:"Numéro de téléphone de contact",
+      plan_free_name:"Gratuit", plan_free_desc:"Votre annonce reste visible 24 heures dans la liste normale.",
+      plan_premium_name:"Premium", plan_premium_desc_tpl:"En tête des résultats pendant {days} jours avec un cadre doré.", days_label:"jours",
       pay_title:"Confirmer le paiement (démo)", pay_desc:"Ceci est une simulation, aucun montant réel ne sera prélevé.",
       pay_confirm:"Confirmer le paiement de démonstration", pay_cancel:"Annuler",
       mylistings_title:"Mes annonces", mylistings_sub:"Suivez et gérez vos annonces.",
@@ -731,8 +733,7 @@ en:{dir:"ltr",name:"English"}, ar:{dir:"rtl",name:"العربية"}, ur:{dir:"rt
       el.setAttribute("placeholder", tr(el.getAttribute("data-i18n-ph")));
     });
     document.getElementById("langSel").value = currentLang;
-    document.getElementById("premiumPriceLabel").textContent = "SAR " + PREMIUM_PRICE;
-    document.getElementById("freePriceLabel").textContent = "SAR 0";
+    renderPlanCards();
     populateCategorySelect(); populateCitySelect(); populateConditionSelect();
     renderCategoryBar(); renderCityBar();
     renderGrid(); renderPremiumStrip();
@@ -757,31 +758,19 @@ en:{dir:"ltr",name:"English"}, ar:{dir:"rtl",name:"العربية"}, ur:{dir:"rt
     var now = Date.now(), day=86400000;
     setUsers([
       {username:"sara_k", password:"demo1234", name:"Sara Al-Khalidi", phone:"0551112222", joinedAt: now-90*day},
-      {username:"omar_j", password:"demo1234", name:"Omar Al-Jubran", phone:"0553334444", joinedAt: now-60*day},
-      {username:"iemy_user", password:"Iemy@1234", name:"IEMY User", phone:"0500000000", joinedAt: now}
+      {username:"omar_j", password:"demo1234", name:"Omar Al-Jubran", phone:"0553334444", joinedAt: now-60*day}
     ]);
     setProducts([
-      {id:"p1", title:"Sony WH-1000XM4 Headphones", category:"electronics", city:"riyadh", price:520, condition:"likenew", description:"Barely used, comes with case and cable.", seller:"sara_k", createdAt: now-2*day, plan:"free", expiresAt: now-2*day+FREE_DAYS*day, status:"active", image:null},
-      {id:"p2", title:"Toyota Land Cruiser 2022", category:"vehicles", city:"jeddah", price:185000, condition:"goodused", description:"Full option, single owner, service history available.", seller:"omar_j", createdAt: now-1*day, plan:"premium", expiresAt: now-1*day+PREMIUM_DAYS*day, status:"active", image:null},
-      {id:"p3", title:"IKEA study desk + chair", category:"furniture", city:"riyadh", price:280, condition:"goodused", description:"Moving out sale, pickup only.", seller:"sara_k", createdAt: now-5*day, plan:"free", expiresAt: now-5*day+FREE_DAYS*day, status:"expired", image:null},
-      {id:"p4", title:"Dell XPS 13, i7, 16GB RAM", category:"electronics", city:"dammam", price:2600, condition:"goodused", description:"Great condition, new battery 3 months ago.", seller:"omar_j", createdAt: now-3*3600000, plan:"premium", expiresAt: now-3*3600000+PREMIUM_DAYS*day, status:"active", image:null},
-      {id:"p5", title:"3-bedroom apartment for rent", category:"realestate", city:"khobar", price:38000, condition:"goodused", description:"Annual rent, near the corniche, 180 sqm.", seller:"sara_k", createdAt: now-8*3600000, plan:"free", expiresAt: now-8*3600000+FREE_DAYS*day, status:"active", image:null},
-      {id:"p6", title:"North Face jacket, size L", category:"fashion", city:"makkah", price:150, condition:"likenew", description:"Worn twice, navy blue, waterproof shell.", seller:"omar_j", createdAt: now-12*3600000, plan:"free", expiresAt: now-12*3600000+FREE_DAYS*day, status:"sold", image:null}
+      {id:"p1", title:"Sony WH-1000XM4 Headphones", category:"electronics", city:"riyadh", price:520, condition:"likenew", description:"Barely used, comes with case and cable.", seller:"sara_k", phone:"0551112222", createdAt: now-2*day, plan:"free", expiresAt: now-2*day+FREE_DAYS*day, status:"active", image:null},
+      {id:"p2", title:"Toyota Land Cruiser 2022", category:"vehicles", city:"jeddah", price:185000, condition:"goodused", description:"Full option, single owner, service history available.", seller:"omar_j", phone:"0553334444", createdAt: now-1*day, plan:"premium30", expiresAt: now-1*day+30*day, status:"active", image:null},
+      {id:"p3", title:"IKEA study desk + chair", category:"furniture", city:"riyadh", price:280, condition:"goodused", description:"Moving out sale, pickup only.", seller:"sara_k", phone:"0551112222", createdAt: now-5*day, plan:"free", expiresAt: now-5*day+FREE_DAYS*day, status:"expired", image:null},
+      {id:"p4", title:"Dell XPS 13, i7, 16GB RAM", category:"electronics", city:"dammam", price:2600, condition:"goodused", description:"Great condition, new battery 3 months ago.", seller:"omar_j", phone:"0553334444", createdAt: now-3*3600000, plan:"premium90", expiresAt: now-3*3600000+90*day, status:"active", image:null},
+      {id:"p5", title:"3-bedroom apartment for rent", category:"realestate", city:"khobar", price:38000, condition:"goodused", description:"Annual rent, near the corniche, 180 sqm.", seller:"sara_k", phone:"0551112222", createdAt: now-8*3600000, plan:"free", expiresAt: now-8*3600000+FREE_DAYS*day, status:"active", image:null},
+      {id:"p6", title:"North Face jacket, size L", category:"fashion", city:"makkah", price:150, condition:"likenew", description:"Worn twice, navy blue, waterproof shell.", seller:"omar_j", phone:"0553334444", createdAt: now-12*3600000, plan:"free", expiresAt: now-12*3600000+FREE_DAYS*day, status:"sold", image:null}
     ]);
     safeSet(LS_SEED, true);
   }
   seedIfNeeded();
-
-  // Ensure the demo login account exists even for visitors who already have
-  // an older version of the demo data saved in localStorage.
-  (function ensureDemoUser(){
-    var users = getUsers();
-    var exists = users.some(function(u){ return u.username.toLowerCase() === "iemy_user"; });
-    if(!exists){
-      users.push({username:"iemy_user", password:"Iemy@1234", name:"IEMY User", phone:"0500000000", joinedAt:Date.now()});
-      setUsers(users);
-    }
-  })();
 
   function sweepExpiry(){
     var products = getProducts(); var changed=false; var now=Date.now();
@@ -813,7 +802,11 @@ en:{dir:"ltr",name:"English"}, ar:{dir:"rtl",name:"العربية"}, ur:{dir:"rt
     document.querySelectorAll(".view").forEach(function(v){v.classList.remove("active");});
     var el=document.getElementById("view-"+name); if(el) el.classList.add("active");
     window.scrollTo({top:0, behavior:"auto"});
-    if(name==="sell") renderSellPreview();
+    if(name==="sell"){
+      var u=currentUser(); var phoneEl=document.getElementById("s-phone");
+      if(u && phoneEl && !phoneEl.value) phoneEl.value = u.phone && u.phone!=="—" ? u.phone : "";
+      renderSellPreview();
+    }
     if(name==="mine") renderMyListings();
   }
   function requireAuthThen(action){
@@ -905,7 +898,7 @@ en:{dir:"ltr",name:"English"}, ar:{dir:"rtl",name:"العربية"}, ur:{dir:"rt
 
   function renderPremiumStrip(){
     var outer=document.getElementById("premiumOuter"); var strip=document.getElementById("premiumStrip");
-    var items=visibleProducts().filter(function(p){return p.plan==="premium" && matchesFilter(p);});
+    var items=visibleProducts().filter(function(p){return isPremium(p) && matchesFilter(p);});
     items.sort(function(a,b){return b.createdAt-a.createdAt;});
     if(!items.length){ outer.style.display="none"; strip.innerHTML=""; return; }
     outer.style.display="block"; strip.innerHTML="";
@@ -926,7 +919,7 @@ en:{dir:"ltr",name:"English"}, ar:{dir:"rtl",name:"العربية"}, ur:{dir:"rt
     row.innerHTML =
       '<div class="thumb" style="'+thumbStyle+'">'+(p.image?'<img src="'+p.image+'" alt="">':CAT_EMOJI[p.category])+'</div>'+
       '<div class="info">'+
-        '<div class="title">'+escapeHtml(p.title)+(p.plan==="premium"?' ★':'')+'</div>'+
+        '<div class="title">'+escapeHtml(p.title)+(isPremium(p)?' ★':'')+'</div>'+
         '<div class="meta"><span>'+tr("city_"+p.city)+'</span><span class="dot">·</span><span>'+tr("condition_"+p.condition)+'</span><span class="dot">·</span><span>'+timeAgo(p.createdAt)+'</span></div>'+
       '</div>'+
       '<div class="price-wrap">'+(p.status==="sold"?'<span class="sold-pill">'+tr("status_sold")+'</span>':'<div class="price">'+money(p.price)+'</div>')+'</div>';
@@ -969,7 +962,7 @@ en:{dir:"ltr",name:"English"}, ar:{dir:"rtl",name:"العربية"}, ur:{dir:"rt
         '<div class="seller-box"><span class="avatar">'+initials(seller?seller.name:"?")+'</span>'+
           '<div><div style="font-weight:700; font-size:13.5px;">'+(seller?escapeHtml(seller.name):"—")+'</div>'+
           '<div style="font-size:12px; color:var(--muted);">'+tr("modal_member_since")+' '+(seller?new Date(seller.joinedAt).toLocaleDateString(currentLang):"—")+'</div></div></div>'+
-        '<div class="contact-reveal" id="contactReveal">'+tr("contact_phone_label")+': '+(seller?seller.phone:"—")+'</div>'+
+        '<div class="contact-reveal" id="contactReveal">'+tr("contact_phone_label")+': '+(p.phone || (seller?seller.phone:"—"))+'</div>'+
         '<div class="actions">'+
           (isOwner ? '<span class="status-pill status-active">'+tr("modal_owner_badge")+'</span>' : '<button class="btn btn-gold" id="contactBtn">'+tr("modal_contact")+'</button>')+
         '</div>'+
@@ -1004,13 +997,36 @@ en:{dir:"ltr",name:"English"}, ar:{dir:"rtl",name:"العربية"}, ur:{dir:"rt
   }
 
   /* ================= plan selection ================= */
-  function renderPlanSelection(){
-    document.getElementById("planFreeCard").classList.toggle("selected", state.selectedPlan==="free");
-    document.getElementById("planPremiumCard").classList.toggle("selected", state.selectedPlan==="premium");
+  function selectPlan(id){ state.selectedPlan=id; renderPlanCards(); renderSellPreview(); }
+  function renderPlanCards(){
+    var grid=document.getElementById("planGrid"); if(!grid) return;
+    grid.innerHTML="";
+
+    var freeCard=document.createElement("div");
+    freeCard.className="plancard"+(state.selectedPlan==="free"?" selected":"");
+    freeCard.innerHTML =
+      '<span class="pcheck"></span>'+
+      '<div class="pname">'+tr("plan_free_name")+'</div>'+
+      '<div class="pprice">SAR 0</div>'+
+      '<div class="pdesc">'+tr("plan_free_desc")+'</div>';
+    freeCard.onclick=function(){ selectPlan("free"); };
+    grid.appendChild(freeCard);
+
+    PREMIUM_PLANS.forEach(function(pl){
+      var card=document.createElement("div");
+      card.className="plancard premium"+(state.selectedPlan===pl.id?" selected":"");
+      var desc=tr("plan_premium_desc_tpl").replace("{days}", pl.days);
+      card.innerHTML =
+        '<span class="pcheck"></span>'+
+        '<div class="pname">'+tr("plan_premium_name")+'</div>'+
+        '<div class="pprice">SAR '+pl.price+'</div>'+
+        '<span class="ptag">'+pl.days+' '+tr("days_label")+'</span>'+
+        '<div class="pdesc">'+desc+'</div>';
+      card.onclick=function(){ selectPlan(pl.id); };
+      grid.appendChild(card);
+    });
   }
-  document.getElementById("planFreeCard").onclick=function(){ state.selectedPlan="free"; renderPlanSelection(); };
-  document.getElementById("planPremiumCard").onclick=function(){ state.selectedPlan="premium"; renderPlanSelection(); };
-  renderPlanSelection();
+  renderPlanCards();
 
   /* ================= image upload ================= */
   function resizeImage(file, maxDim, cb){
@@ -1048,7 +1064,7 @@ en:{dir:"ltr",name:"English"}, ar:{dir:"rtl",name:"العربية"}, ur:{dir:"rt
     var holder=document.getElementById("previewCard"); holder.innerHTML="";
     var r=renderRow(fake); r.style.cursor="default"; r.onclick=null; holder.appendChild(r);
   }
-  ["s-title","s-price","s-condition","s-category","s-city"].forEach(function(id){
+  ["s-title","s-phone","s-price","s-condition","s-category","s-city"].forEach(function(id){
     document.getElementById(id).addEventListener("input", renderSellPreview);
     document.getElementById(id).addEventListener("change", renderSellPreview);
   });
@@ -1068,10 +1084,11 @@ en:{dir:"ltr",name:"English"}, ar:{dir:"rtl",name:"العربية"}, ur:{dir:"rt
     var u=currentUser();
     if(!u){ openAuth("login"); toast(tr("toast_login_required_sell")); return; }
     var title=document.getElementById("s-title").value.trim();
+    var phone=document.getElementById("s-phone").value.trim();
     var price=parseFloat(document.getElementById("s-price").value);
     var desc=document.getElementById("s-desc").value.trim();
     var errEl=document.getElementById("sellErr");
-    if(!title || !desc || isNaN(price) || price<0){
+    if(!title || !phone || !desc || isNaN(price) || price<0){
       errEl.textContent = tr("register_error_fill"); errEl.style.display="block"; return;
     }
     errEl.style.display="none";
@@ -1079,10 +1096,10 @@ en:{dir:"ltr",name:"English"}, ar:{dir:"rtl",name:"العربية"}, ur:{dir:"rt
     function createListing(){
       var now=Date.now();
       var plan=state.selectedPlan;
-      var expiresAt = now + (plan==="premium" ? PREMIUM_DAYS : FREE_DAYS)*86400000;
+      var expiresAt = now + planDays(plan)*86400000;
       var product={
         id:"p"+now, title:title, category:document.getElementById("s-category").value, city:document.getElementById("s-city").value,
-        price:price, condition:document.getElementById("s-condition").value, description:desc, seller:u.username,
+        price:price, condition:document.getElementById("s-condition").value, description:desc, seller:u.username, phone:phone,
         createdAt:now, plan:plan, expiresAt:expiresAt, status:"active", image:state.imageDataUrl
       };
       var products=getProducts(); products.push(product);
@@ -1090,14 +1107,14 @@ en:{dir:"ltr",name:"English"}, ar:{dir:"rtl",name:"العربية"}, ur:{dir:"rt
       if(!ok){ errEl.textContent="Couldn't save — try a smaller photo."; errEl.style.display="block"; return; }
       toast(tr("toast_published"));
       document.getElementById("sellForm").reset();
-      state.imageDataUrl=null; state.selectedPlan="free"; renderPlanSelection();
+      state.imageDataUrl=null; state.selectedPlan="free"; renderPlanCards();
       document.getElementById("imgPickerText").textContent=tr("form_photo");
       populateCategorySelect(); populateCitySelect(); populateConditionSelect();
       renderGrid(); showView("home");
     }
 
-    if(state.selectedPlan==="premium"){
-      openPay(PREMIUM_PRICE, createListing);
+    if(state.selectedPlan!=="free"){
+      openPay(planPrice(state.selectedPlan), createListing);
     } else {
       createListing();
     }
@@ -1122,12 +1139,12 @@ en:{dir:"ltr",name:"English"}, ar:{dir:"rtl",name:"العربية"}, ur:{dir:"rt
       row.innerHTML =
         '<div class="thumb-sm" style="'+thumbStyle+'">'+(p.image?'<img src="'+p.image+'" alt="">':CAT_EMOJI[p.category])+'</div>'+
         '<div class="mi-body"><div class="mi-title">'+escapeHtml(p.title)+statusHtml+'</div>'+
-        '<div class="mi-meta">'+money(p.price)+' · '+tr("city_"+p.city)+' · '+timeAgo(p.createdAt)+(p.plan==="premium"?' · ★ '+tr("premium_badge"):'')+'</div></div>'+
+        '<div class="mi-meta">'+money(p.price)+' · '+tr("city_"+p.city)+' · '+timeAgo(p.createdAt)+(isPremium(p)?' · ★ '+tr("premium_badge"):'')+'</div></div>'+
         '<div class="mi-actions">'+
           (st!=="sold" ? '<button class="btn btn-ghost btn-sm toggleSold" style="padding:7px 12px; font-size:12.5px;">'+tr("btn_marksold")+'</button>' :
                           '<button class="btn btn-ghost btn-sm toggleSold" style="padding:7px 12px; font-size:12.5px;">'+tr("btn_markactive")+'</button>')+
           (st==="expired" ? '<button class="btn btn-ghost btn-sm renewBtn" style="padding:7px 12px; font-size:12.5px;">'+tr("btn_renew")+'</button>' : '')+
-          (p.plan!=="premium" ? '<button class="btn btn-gold btn-sm upgradeBtn" style="padding:7px 12px; font-size:12.5px;">'+tr("btn_upgrade")+'</button>' : '')+
+          (!isPremium(p) ? '<button class="btn btn-gold btn-sm upgradeBtn" style="padding:7px 12px; font-size:12.5px;">'+tr("btn_upgrade")+'</button>' : '')+
           '<button class="btn btn-danger delBtn" style="padding:7px 12px; font-size:12.5px;">'+tr("btn_delete")+'</button>'+
         '</div>';
       row.querySelector(".toggleSold").onclick=function(){
@@ -1141,9 +1158,10 @@ en:{dir:"ltr",name:"English"}, ar:{dir:"rtl",name:"العربية"}, ur:{dir:"rt
       };
       var upBtn=row.querySelector(".upgradeBtn");
       if(upBtn) upBtn.onclick=function(){
-        openPay(PREMIUM_PRICE, function(){
+        var tier=PREMIUM_PLANS[1]; // default upgrade offer: the 30-day premium tier
+        openPay(tier.price, function(){
           var all=getProducts(); var idx=all.findIndex(function(x){return x.id===p.id;});
-          if(idx>-1){ all[idx].plan="premium"; all[idx].status="active"; all[idx].expiresAt=Date.now()+PREMIUM_DAYS*86400000; setProducts(all); renderMyListings(); renderGrid(); toast(tr("toast_updated")); }
+          if(idx>-1){ all[idx].plan=tier.id; all[idx].status="active"; all[idx].expiresAt=Date.now()+tier.days*86400000; setProducts(all); renderMyListings(); renderGrid(); toast(tr("toast_updated")); }
         });
       };
       row.querySelector(".delBtn").onclick=function(){
